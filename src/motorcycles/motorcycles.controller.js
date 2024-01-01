@@ -1,30 +1,28 @@
+const { catchAsync } = require('../common/errors/catchAsync')
 const MotorcyclesServices = require('./motorcycles.service')
 
 
-const findAll = async(req, res) => {
+const findAll = catchAsync(async(req, res) => {
     const { requestTime } = req
     const motorcycles = await MotorcyclesServices.findAll()
     return res.status(201).json({
         requestTime,
         motorcycles
     })
-}
+})
 
-const create = async(req, res) => {
-    const { requestTime } = req
 
-    const { date, status, userId } = req.body
+const create = catchAsync(async(req, res) => {
+    const { date, status, motorsNumber, userId } = req.body
 
-    const motorcycles = await MotorcyclesServices.create({date, status, userId})
+    const motorcycles = await MotorcyclesServices.create({date, status, motorsNumber, userId})
 
     return res.status(201).json({
-        requestTime,
         data: motorcycles
     })
-}
+})
 
-const findOne = async(req, res) => {
-    const { requestTime } = req
+const findOne = catchAsync(async(req, res) => {
     const { id } = req.params
 
     const motorcycle = await MotorcyclesServices.findOne(id)
@@ -36,15 +34,14 @@ const findOne = async(req, res) => {
     }
 
     return res.status(201).json({
-        requestTime,
         motorcycle
     })
-}
+})
 
-const update = async(req, res) => {
-    const { requestTime } = req
+const update = catchAsync(async(req, res) => {
+
     const { id } = req.params
-    const { date, status, userId } = req.body
+    const { date, status, motorsNumber, userId } = req.body
 
     const motorcycle = await MotorcyclesServices.findOne(id)
 
@@ -54,16 +51,15 @@ const update = async(req, res) => {
         })
     }
 
-    const updatedMoto =  MotorcyclesServices.update(motorcycle, { date, status, userId })
+    const updatedMoto =  MotorcyclesServices.update(motorcycle, { date, status, motorsNumber, userId })
 
     return res.status(201).json({
-        requestTime,
         updatedMoto
     })
-}
+})
 
 
-const deleteMoto = async(req, res) => {
+const deleteMoto = catchAsync(async(req, res) => {
     const { id } = req.params
     const { requestTime } = req
     
@@ -78,10 +74,9 @@ const deleteMoto = async(req, res) => {
     }
 
     return res.status(201).json({
-        motorcycle,
-        requestTime
+        motorcycle
     })
-}
+})
 
 module.exports = {
     findAll,

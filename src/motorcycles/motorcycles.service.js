@@ -4,7 +4,7 @@ class MotorcyclesServices {
     static async findAll(){
         return await Motorcycles.findAll({
             where: {
-                status: ["pending", "completed"]
+                status: "pending"
             }
         })
     }
@@ -17,7 +17,7 @@ class MotorcyclesServices {
         return await Motorcycles.findOne({
             where: {
                 id,
-                status: ["pending", "completed"]
+                status: "pending"
             }
         })
     }

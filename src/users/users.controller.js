@@ -1,67 +1,106 @@
+const AppError = require('../common/errors/appError')
+const { catchAsync } = require('../common/errors/catchAsync')
+const { verifyPassword, encryptPassword } = require('../config/plugins/encripted-password')
+const { validatePartialUser, validateUser, validateLogin } = require('./users.schema')
+const { generateJWT } = require('../config/plugins/generate-jwt.plugin')
 const UsersServices = require('./users.services')
 
-const findAll = async(req, res) => {
-    const { requestTime } = req
-    const users = await UsersServices.findAll()
+const register = catchAsync(async(req, res, next) => {
+    const {hasError, errorMessages, userData} = validateUser(req.body)
+
+    if(hasError) {
+        return res.status(422).json({
+            status: 'error',
+            message: errorMessages
+        })
+    }
+    const user = await UsersServices.create(userData)
 
     return res.status(201).json({
-        requestTime,
-        users
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        }
     })
-}
+})
 
-const create = async(req, res) => {
-    const { requestTime } = req
-    const { name, email, password, role } = req.body
+const login = catchAsync(async(req,res,next) => {
+    const { hasError, errorMessages, userData } = validateLogin(req.body)
 
-    const users = await UsersServices.create({ name, email, password, role })
-
-    return res.status(201).json({
-        requestTime,
-        users
-    })
-}
-
-const findOne = async(req, res) => {
-    const { id } = req.params
-    const { requestTime } = req
-
-    const user = await UsersServices.findOne(id)
-
-    if(!user){
-        return res.status(404).json({
-            message: `User with id ${id} not found`
+    if(hasError) {
+        return res.status(422).json({
+            status: 'error',
+            message: errorMessages
         })
     }
 
-    return res.status(201).json({
-        requestTime,
-        user
-    })
-}
-
-const update = async(req, res) => {
-    const { id } = req.params
-    const { requestTime } = req
-    const { name, email, password, role } = req.body
-
-    const user = await UsersServices.findOne(id)
+    //validar la existencia del usuario
+    const user = await UsersServices.findOneByEmail(userData.email)
 
     if(!user){
-        return res.status(404).json({
-            message: `User with id ${id} not found`
-        })
+        return next(new AppError('this account does not exist', 404))
+    }
+    const encrypt = (await encryptPassword(user.password)).toString()
+    //comparar password
+    const isCorrectPassword = await verifyPassword(userData.password, user.password)
+
+    if(!isCorrectPassword) {
+        console.log(userData.password)
+        return next(new AppError('Incorrect email or password', 401))
     }
 
-    const updatedUser = UsersServices.update(user, { name, email, password, role })
+    //generar jwt
+    const token = await generateJWT(user.id)
 
-    return res.status(201).json({
-        requestTime,
-        updatedUser
+    return res.status(200).json({
+        token,
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        }
     })
-}
+})
 
-const deleteUser = async(req, res) => {
+
+
+const findAll = catchAsync(async(req, res) => {
+   const users = await UsersServices.findAll()
+   return res.status(200).json(users)
+})
+
+// const create = async(req, res) => {
+//     const { requestTime } = req
+//     const { name, email, password, role } = req.body
+
+//     const users = await UsersServices.create({ name, email, password, role })
+
+//     return res.status(201).json({
+//         requestTime,
+//         users
+//     })
+// }
+
+const findOne = catchAsync(async(req, res, next) => {
+    const { user } = req
+
+    return res.status(201).json(user)
+})
+
+const update = catchAsync( async(req, res) => {
+    
+    const { user } = req
+    const { hasError, errorMessages, userData} = validatePartialUser(req.body)
+
+    const userUpdated = await UsersServices.update(user, userData)
+
+    return res.status(201).json(userUpdated)
+})
+
+const deleteUser = catchAsync(async(req, res) => {
     const { requestTime } = req
     const { id } = req.params
     
@@ -79,12 +118,14 @@ const deleteUser = async(req, res) => {
         requestTime,
         userDelete
     })
-}
+})
 
 module.exports = {
     findAll,
-    create,
+    // create,
     findOne,
     update,
-    deleteUser
+    deleteUser,
+    register,
+    login
 }

@@ -31,6 +31,15 @@ class UsersServices {
             status: 'not available'
         })
     }
+
+    static async findOneByEmail(email){
+        return await Users.findOne({
+            where: {
+                status: 'available',
+                email
+            }
+        })
+    }
 }
 
 module.exports = UsersServices

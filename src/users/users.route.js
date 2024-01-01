@@ -1,21 +1,22 @@
 const express = require('express')
-const { findAll, create, findOne, update, deleteUser } = require('./users.controller')
+const { findAll, findOne, update, deleteUser, register, login } = require('./users.controller')
+const { validateExistUser, protect, restrictTo, protectAccountOwner } = require('./users.middleware')
 
 const router = express.Router()
 
-//GET
+
+router.post('/users/register', register)
+
+router.post('/users/login', login)
+
+router.use(protect)
+//POST
 router.get('/users', findAll)
 
-//POST
-router.post('/users', create)
-
-//GETONE
-router.get('/users/:id', findOne)
-
-//UPDATE
-router.patch('/users/:id', update)
-
-//DELETE
-router.delete('/users/:id', deleteUser)
+//router.post('/users', create)
+router.route('/users/:id')
+    .get(restrictTo('employee'), validateExistUser, findOne)
+    .patch(validateExistUser, protectAccountOwner, update)
+    .delete(validateExistUser, protectAccountOwner,  deleteUser)
 
 module.exports = router
